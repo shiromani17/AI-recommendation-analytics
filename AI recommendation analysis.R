@@ -173,7 +173,7 @@ model <- lm(
 
 summary(model)
 
-#Does AI Personalisation predict Customer Lifetime Value?
+#Does AI Personalization predict Customer Lifetime Value?
 model1 <- lm(
   CLV ~ AIP,
   data = data
@@ -181,3 +181,77 @@ model1 <- lm(
 
 summary(model1)
 
+install.packages("ggplot2")
+library(ggplot2)
+
+colnames(data)
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# GRAPH 1 - CONSTRUCT COMPARISON BAR PLOT
+construct_summary <- data.frame(
+  Construct = c("(AIP)", 
+                "(CE)", 
+                "(CR)", 
+                "(CLV)", 
+                "(AT)"),
+  Mean_Score = c(
+    mean(data$AIP, na.rm = TRUE),
+    mean(data$CE, na.rm = TRUE),
+    mean(data$CR, na.rm = TRUE),
+    mean(data$CLV, na.rm = TRUE),
+    mean(data$AT, na.rm = TRUE)
+  )
+)
+
+plot_constructs <- ggplot(construct_summary, aes(x = reorder(Construct, -Mean_Score), y = Mean_Score, fill = Construct)) +
+  geom_bar(stat = "identity", width = 0.55, show.legend = FALSE) +
+  geom_text(aes(label = sprintf("%.2f", Mean_Score)), vjust = -0.5, fontface = "bold", size = 4.5) +
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal(base_size = 12) +
+  coord_cartesian(ylim = c(1, 7)) +
+  labs(
+    title = "E-Commerce AI Impact: Core Construct Mean Scores",
+    subtitle = "Evaluated on a 7-Point Likert Scale (N = 224)",
+    x = "Construct",
+    y = "Average Rating (1 to 7)"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text.x = element_text(angle = 15, hjust = 1)
+  )
+print(plot_constructs)
+ggsave("construct_means_comparison.png", plot = plot_constructs, width = 9, height = 5, dpi = 300)
+
+# GRAPH 2: DEMOGRAPHICS (GENDER & AGE)
+demo_df <- data %>%
+  rename(Gender = `D1. Gender`, Age_Group = Age) %>%
+  filter(!is.na(Gender) & !is.na(Age_Group)) %>%
+  mutate(
+    # Clean encoding artifacts and replace with a clean standard hyphen '-'
+    Age_Group = gsub("[^0-9]", "-", Age_Group),
+    Age_Group = gsub("-+", "-", Age_Group),        # Fix any multiple dashes
+    Age_Group = gsub("^-|-$", "", Age_Group)       # Trim leading or trailing dashes
+  )
+
+plot_demographics <- ggplot(demo_df, aes(x = Age_Group, fill = Gender)) +
+  geom_bar(position = "dodge", width = 0.6) +
+  geom_text(stat = "count", aes(label = after_stat(count)), position = position_dodge(0.6), vjust = -0.4, size = 3.8) +
+  scale_fill_manual(values = c("#2b6cb0", "#dd6b20", "#38a169")) +
+  theme_minimal(base_size = 12) +
+  labs(
+    title = "Demographic Distribution of Survey Respondents",
+    subtitle = "Respondent Breakdown by Age Group and Gender",
+    x = "Age Group",
+    y = "Number of Respondents",
+    fill = "Gender"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    legend.position = "top"
+  )
+
+print(plot_demographics)
+ggsave("demographics_breakdown.png", plot = plot_demographics, width = 8, height = 5, dpi = 300)
